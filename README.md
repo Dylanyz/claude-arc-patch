@@ -12,9 +12,11 @@ I also included https://github.com/stolot0mt0m/claude-chromium-native-messaging
 
 Install that yourself or:
 
-paste 'claude-arc-patch/NativeMessagingHosts/NEWcom.anthropic.claude_browser_extension.json'
+copy 'claude-arc-patch/NativeMessagingHosts/NEWcom.anthropic.claude_browser_extension.json'
 
-in '/Users/~/Library/Application Support/Arc/User Data/NativeMessagingHosts/com.anthropic.claude_browser_extension.json'
+paste in '/Users/~/Library/Application Support/Arc/User Data/NativeMessagingHosts/com.anthropic.claude_browser_extension.json'
+
+and rename to remove NEW
 
 Not sure if that is actually needed- I'll test.
 
