@@ -2,7 +2,9 @@
 
 This is an extension you can load in arc where it makes a popup for claude in chrome.
 
-Just go to chrome://extensions, enable developer mode, load unpacked - and add this folder.
+Download: Click code at top of page -> download zip. Extract the zip.
+
+In arc go to chrome://extensions(just put in address bar), enable developer mode, load unpacked - and add this folder.
 
 All this is, is the latest claude in chrome extension, with a minor tweak that makes the window a pop-up instead of integrated sidebar, thus allowing it to work with Arc.
 
