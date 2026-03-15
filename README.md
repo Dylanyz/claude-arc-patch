@@ -8,9 +8,14 @@ All this is, is the latest claude in chrome extension, with a minor tweak that m
 
 - - -
 
-I also included https://github.com/stolot0mt0m/claude-chromium-native-messaging
+This tool may also be needed for this to work: https://github.com/stolot0mt0m/claude-chromium-native-messaging
 
-Install that yourself or:
+
+You can follow the install instructions from there, very easy - just download it and run a command to auto install. 
+
+<details> <summary>
+Or you can copy and paste one file for manual installation(I've included the file here):
+</summary>
 
 copy 'claude-arc-patch/NativeMessagingHosts/NEWcom.anthropic.claude_browser_extension.json'
 
@@ -19,6 +24,7 @@ paste in '/Users/~/Library/Application Support/Arc/User Data/NativeMessagingHost
 and rename to remove NEW
 
 Not sure if that is actually needed- I'll test.
+</details>
 
 - - -
 
