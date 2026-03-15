@@ -1,0 +1,15 @@
+/*
+  from https://github.com/stolot0mt0m/claude-chromium-native-messaging
+*/
+
+{
+  "name": "com.anthropic.claude_browser_extension",
+  "description": "Claude Browser Extension Native Host",
+  "path": "/Applications/Claude.app/Contents/Helpers/chrome-native-host",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://fcoeoabgfenejglbffodgkkbkcdhcgfn/",
+    "chrome-extension://dihbgbndebgnbjfmelmegjepbnkhlgni/",
+    "chrome-extension://dngcpimnedloihjnnfngkgjoidhnaolf/"
+  ]
+}
