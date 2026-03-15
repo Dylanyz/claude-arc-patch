@@ -6,6 +6,8 @@ Just go to chrome://extensions, enable developer mode, load unpacked - and add t
 
 All this is, is the latest claude in chrome extension, with a minor tweak that makes the window a pop-up instead of integrated sidebar, thus allowing it to work with Arc.
 
+It works with page context, teach claude mode, etc.
+
 - - -
 
 This tool may also be needed for this to work: https://github.com/stolot0mt0m/claude-chromium-native-messaging
