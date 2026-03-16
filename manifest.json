@@ -29,6 +29,11 @@
       "js": [ "assets/agent-visual-indicator.js-Ct7LqXhp.js" ],
       "matches": [ "\u003Call_urls>" ],
       "run_at": "document_idle"
+   }, {
+      "all_frames": false,
+      "js": [ "floating-panel.js" ],
+      "matches": [ "\u003Call_urls>" ],
+      "run_at": "document_idle"
    } ],
    "content_security_policy": {
       "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://api.anthropic.com wss://api.anthropic.com https://claude.ai https://platform.claude.com https://api.segment.io https://*.segment.com https://*.ingest.us.sentry.io https://api.honeycomb.io https://browser-intake-us5-datadoghq.com wss://bridge.claudeusercontent.com wss://bridge-staging.claudeusercontent.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;"
@@ -56,6 +61,10 @@
    }, {
       "matches": [ "\u003Call_urls>" ],
       "resources": [ "assets/accessibility-tree.js-D8KNCIWO.js", "assets/agent-visual-indicator.js-Ct7LqXhp.js" ],
+      "use_dynamic_url": false
+   }, {
+      "matches": [ "\u003Call_urls>" ],
+      "resources": [ "sidepanel.html", "theme-init.js", "assets/*" ],
       "use_dynamic_url": false
    } ]
 }
