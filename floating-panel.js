@@ -18,9 +18,34 @@
   let container = null;
   let iframe = null;
   let isVisible = false;
+  let escapeKeyListener = null;
+
+  function isExtensionValid() {
+    try {
+      return !!chrome.runtime && !!chrome.runtime.id;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function cleanup() {
+    if (panelEl && panelEl.parentNode) {
+      panelEl.remove();
+    }
+    panelEl = null;
+    shadowRoot = null;
+    container = null;
+    iframe = null;
+    isVisible = false;
+    if (escapeKeyListener) {
+      document.removeEventListener('keydown', escapeKeyListener);
+      escapeKeyListener = null;
+    }
+  }
 
   // Load saved state
   async function loadState() {
+    if (!isExtensionValid()) return;
     try {
       const result = await chrome.storage.local.get(STORAGE_KEY);
       if (result[STORAGE_KEY]) {
@@ -31,6 +56,7 @@
 
   // Save state
   function saveState() {
+    if (!isExtensionValid()) return;
     try {
       chrome.storage.local.set({ [STORAGE_KEY]: panelState });
     } catch (e) { /* ignore */ }
@@ -149,16 +175,6 @@
         border-radius: 0 0 2px 0;
       }
 
-      .claude-panel-resize-left {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 20px;
-        height: 20px;
-        cursor: nesw-resize;
-        z-index: 1;
-      }
-
       .claude-panel-resize-edge-right {
         position: absolute;
         top: 40px;
@@ -202,7 +218,9 @@
   }
 
   function createPanel() {
-    if (panelEl) return;
+    // Remove any stale panel from a previous script context
+    const existing = document.querySelector('claude-floating-panel');
+    if (existing) existing.remove();
 
     panelEl = document.createElement('claude-floating-panel');
     shadowRoot = panelEl.attachShadow({ mode: 'closed' });
@@ -284,120 +302,124 @@
   }
 
   function setupDrag(header) {
-    let isDragging = false;
-    let startX, startY, startLeft, startTop;
-
     header.addEventListener('mousedown', (e) => {
       if (e.target.closest('.claude-panel-btn')) return;
-      isDragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      const rect = container.getBoundingClientRect();
-      startLeft = rect.left;
-      startTop = rect.top;
-      e.preventDefault();
-    });
 
-    document.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const rect = container.getBoundingClientRect();
+      const startLeft = rect.left;
+      const startTop = rect.top;
       e.preventDefault();
 
-      // Disable iframe pointer events during drag
-      iframe.style.pointerEvents = 'none';
+      function onMove(e) {
+        e.preventDefault();
+        iframe.style.pointerEvents = 'none';
 
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
 
-      let newLeft = startLeft + dx;
-      let newTop = startTop + dy;
+        let newLeft = startLeft + dx;
+        let newTop = startTop + dy;
 
-      // Constrain to viewport
-      const maxLeft = window.innerWidth - container.offsetWidth;
-      const maxTop = window.innerHeight - container.offsetHeight;
-      newLeft = Math.max(0, Math.min(newLeft, maxLeft));
-      newTop = Math.max(0, Math.min(newTop, maxTop));
+        // Constrain to viewport
+        const maxLeft = window.innerWidth - container.offsetWidth;
+        const maxTop = window.innerHeight - container.offsetHeight;
+        newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+        newTop = Math.max(0, Math.min(newTop, maxTop));
 
-      container.style.left = newLeft + 'px';
-      container.style.top = newTop + 'px';
-      container.style.right = 'auto';
-    });
+        container.style.left = newLeft + 'px';
+        container.style.top = newTop + 'px';
+        container.style.right = 'auto';
+      }
 
-    document.addEventListener('mouseup', () => {
-      if (!isDragging) return;
-      isDragging = false;
-      iframe.style.pointerEvents = '';
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        iframe.style.pointerEvents = '';
 
-      // Save position
-      const rect = container.getBoundingClientRect();
-      panelState.x = rect.left;
-      panelState.y = rect.top;
-      saveState();
+        const rect = container.getBoundingClientRect();
+        panelState.x = rect.left;
+        panelState.y = rect.top;
+        saveState();
+      }
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
     });
   }
 
   function setupResize(handle, direction) {
-    let isResizing = false;
-    let startX, startY, startWidth, startHeight, startLeft, startTop;
-
     handle.addEventListener('mousedown', (e) => {
-      isResizing = true;
-      startX = e.clientX;
-      startY = e.clientY;
+      const startX = e.clientX;
+      const startY = e.clientY;
       const rect = container.getBoundingClientRect();
-      startWidth = rect.width;
-      startHeight = rect.height;
-      startLeft = rect.left;
-      startTop = rect.top;
+      const startWidth = rect.width;
+      const startHeight = rect.height;
+      const startLeft = rect.left;
+      const startTop = rect.top;
       e.preventDefault();
       e.stopPropagation();
-    });
 
-    document.addEventListener('mousemove', (e) => {
-      if (!isResizing) return;
-      e.preventDefault();
+      function onMove(e) {
+        e.preventDefault();
+        iframe.style.pointerEvents = 'none';
 
-      iframe.style.pointerEvents = 'none';
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
 
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-
-      if (direction === 'corner-br') {
-        const newWidth = Math.max(MIN_WIDTH, startWidth + dx);
-        const newHeight = Math.max(MIN_HEIGHT, startHeight + dy);
-        container.style.width = newWidth + 'px';
-        container.style.height = newHeight + 'px';
-      } else if (direction === 'edge-right') {
-        const newWidth = Math.max(MIN_WIDTH, startWidth + dx);
-        container.style.width = newWidth + 'px';
-      } else if (direction === 'edge-left') {
-        const newWidth = Math.max(MIN_WIDTH, startWidth - dx);
-        const newLeft = startLeft + (startWidth - newWidth);
-        container.style.width = newWidth + 'px';
-        container.style.left = newLeft + 'px';
-        container.style.right = 'auto';
-      } else if (direction === 'edge-bottom') {
-        const newHeight = Math.max(MIN_HEIGHT, startHeight + dy);
-        container.style.height = newHeight + 'px';
-      } else if (direction === 'edge-top') {
-        const newHeight = Math.max(MIN_HEIGHT, startHeight - dy);
-        const newTop = startTop + (startHeight - newHeight);
-        container.style.height = newHeight + 'px';
-        container.style.top = newTop + 'px';
+        if (direction === 'corner-br') {
+          const maxWidth = window.innerWidth - startLeft;
+          const maxHeight = window.innerHeight - startTop;
+          const newWidth = Math.min(maxWidth, Math.max(MIN_WIDTH, startWidth + dx));
+          const newHeight = Math.min(maxHeight, Math.max(MIN_HEIGHT, startHeight + dy));
+          container.style.width = newWidth + 'px';
+          container.style.height = newHeight + 'px';
+        } else if (direction === 'edge-right') {
+          const maxWidth = window.innerWidth - startLeft;
+          const newWidth = Math.min(maxWidth, Math.max(MIN_WIDTH, startWidth + dx));
+          container.style.width = newWidth + 'px';
+        } else if (direction === 'edge-left') {
+          let newWidth = Math.max(MIN_WIDTH, startWidth - dx);
+          let newLeft = startLeft + (startWidth - newWidth);
+          if (newLeft < 0) {
+            newLeft = 0;
+            newWidth = Math.max(MIN_WIDTH, startLeft + startWidth);
+          }
+          container.style.width = newWidth + 'px';
+          container.style.left = newLeft + 'px';
+          container.style.right = 'auto';
+        } else if (direction === 'edge-bottom') {
+          const maxHeight = window.innerHeight - startTop;
+          const newHeight = Math.min(maxHeight, Math.max(MIN_HEIGHT, startHeight + dy));
+          container.style.height = newHeight + 'px';
+        } else if (direction === 'edge-top') {
+          let newHeight = Math.max(MIN_HEIGHT, startHeight - dy);
+          let newTop = startTop + (startHeight - newHeight);
+          if (newTop < 0) {
+            newTop = 0;
+            newHeight = Math.max(MIN_HEIGHT, startTop + startHeight);
+          }
+          container.style.height = newHeight + 'px';
+          container.style.top = newTop + 'px';
+        }
       }
-    });
 
-    document.addEventListener('mouseup', () => {
-      if (!isResizing) return;
-      isResizing = false;
-      iframe.style.pointerEvents = '';
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        iframe.style.pointerEvents = '';
 
-      // Save dimensions and position
-      const rect = container.getBoundingClientRect();
-      panelState.width = rect.width;
-      panelState.height = rect.height;
-      panelState.x = rect.left;
-      panelState.y = rect.top;
-      saveState();
+        const rect = container.getBoundingClientRect();
+        panelState.width = rect.width;
+        panelState.height = rect.height;
+        panelState.x = rect.left;
+        panelState.y = rect.top;
+        saveState();
+      }
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
     });
   }
 
@@ -441,6 +463,12 @@
     isVisible = true;
     panelState.open = true;
     saveState();
+
+    // Close on Escape
+    escapeKeyListener = (e) => {
+      if (e.key === 'Escape') hidePanel();
+    };
+    document.addEventListener('keydown', escapeKeyListener);
   }
 
   function hidePanel() {
@@ -450,6 +478,11 @@
     isVisible = false;
     panelState.open = false;
     saveState();
+
+    if (escapeKeyListener) {
+      document.removeEventListener('keydown', escapeKeyListener);
+      escapeKeyListener = null;
+    }
 
     // Remove iframe src after animation to free resources
     setTimeout(() => {
@@ -467,15 +500,26 @@
     }
   }
 
+  // Gate message handling on state being loaded so first toggle uses correct position
+  let stateLoaded = false;
+  const statePromise = loadState().then(() => { stateLoaded = true; });
+
   // Listen for messages from service worker
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (!isExtensionValid()) return false;
     if (message.type === 'TOGGLE_FLOATING_PANEL') {
+      if (!stateLoaded) {
+        statePromise.then(() => {
+          togglePanel(message.tabId, message.extensionId);
+          sendResponse({ success: true });
+        });
+        return true; // keep channel open for async sendResponse
+      }
       togglePanel(message.tabId, message.extensionId);
       sendResponse({ success: true });
     }
     return false;
   });
 
-  // Initialize
-  loadState();
+
 })();
