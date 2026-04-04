@@ -52,7 +52,6 @@
    "name": "Claude",
    "options_page": "options.html",
    "permissions": [ "storage", "activeTab", "scripting", "debugger", "tabGroups", "tabs", "alarms", "notifications", "system.display", "webNavigation", "declarativeNetRequestWithHostAccess", "offscreen", "nativeMessaging", "unlimitedStorage", "downloads" ],
-   "update_url": "https://clients2.google.com/service/update2/crx",
    "version": "1.0.61",
    "web_accessible_resources": [ {
       "matches": [ "https://*.claude.ai/*", "https://claude.ai/*" ],
